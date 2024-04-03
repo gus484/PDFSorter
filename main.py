@@ -6,10 +6,11 @@ import shutil
 
 from PyPDF2 import PdfReader
 
+from extractors.ing import ExtractorIng
 from extractors.traderepublic import ExtractorTradeRepublic
 
 DEBUG = True
-DEPOT_PATHS = [("Trade Republic", "Trade Republic")]
+DEPOT_PATHS = [("Trade Republic", "Trade Republic", ExtractorTradeRepublic), ("ING-DiBa", "Ing", ExtractorIng)]
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(format='%(levelname)s:%(message)s', encoding='utf-8', level=logging.DEBUG)
@@ -31,6 +32,9 @@ def move_pdfs(target_directory: str, pdfs: list):
         logger.info(f"File:  {os.path.basename(pdf_path)}")
         depot, holding = get_information(pdf_path)
 
+        if not depot or not holding:
+            continue
+
         if not DEBUG:
             target_path = check_and_create_paths(target_directory, depot, holding)
             target_path = os.path.join(target_path, os.path.basename(pdf_path))
@@ -45,15 +49,17 @@ def check_and_create_paths(target_path: str, depot: str, holding: str):
 
 
 def get_depot(pdf_text: str) -> str:
-    for search_word, directory_name in DEPOT_PATHS:
+    for search_word, directory_name, _ in DEPOT_PATHS:
         if search_word in pdf_text:
             return directory_name
+    return None
 
 
 def get_holding(pdf_text: str, depot: str) -> str:
     pdf_list = pdf_text.split("\n")
-    if depot == "Trade Republic":
-        return ExtractorTradeRepublic().get_holding_name(pdf_list)
+    for _, depot_name, extractor in DEPOT_PATHS:
+        if depot == depot_name:
+            return extractor().get_holding_name(pdf_list)
 
 
 def get_information(pdf_path: str):
