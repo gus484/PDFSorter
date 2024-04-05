@@ -1,4 +1,5 @@
 import argparse
+import datetime
 import glob
 import logging
 import os.path
@@ -27,7 +28,11 @@ def move_pdfs(target_directory: str, pdfs: list):
         logger.warning("Target path not exists")
         return
 
+    start_time = datetime.datetime.now()
+    processed_pdfs = 0
+
     for pdf_path in pdfs:
+        processed_pdfs += 1
         logger.info(f"File:  {os.path.basename(pdf_path)}")
         depot, holding = get_information(pdf_path)
 
@@ -35,6 +40,11 @@ def move_pdfs(target_directory: str, pdfs: list):
             target_path = check_and_create_paths(target_directory, depot, holding)
             target_path = os.path.join(target_path, os.path.basename(pdf_path))
             shutil.copy2(pdf_path, target_path)
+
+    end_time = datetime.datetime.now()
+    process_time = (end_time - start_time).total_seconds()
+    logger.info(f"Time in sec: {process_time}")
+    logger.info(f"Processed PDFs: {processed_pdfs}")
 
 
 def check_and_create_paths(target_path: str, depot: str, holding: str):
